@@ -7,7 +7,7 @@ do
   echo "Listening on $PORT..."
   nc -l $PORT
   ((PORT++))
-  
+
   ((N++))
   echo "Received connection $N"
 done

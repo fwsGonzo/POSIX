@@ -28,8 +28,10 @@ using Connection_ptr = net::tcp::Connection_ptr;
 Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t port)
 {
   auto outgoing = inet.tcp().connect({addr, port});
+  assert(!outgoing->is_closed());
+
   // wait for connection state to change
-  while (!outgoing->is_connected() && !outgoing->is_closing()) {
+  while (not (outgoing->is_connected() || outgoing->is_closing() || outgoing->is_closed())) {
     OS::halt();
     IRQ_manager::get().process_interrupts();
   }
@@ -45,7 +47,7 @@ void blocking_close(Connection_ptr socket)
   // close connection
   socket->close();
   // wait for connection to close
-  while (socket->is_closing()) {
+  while (!socket->is_closed()) {
     OS::halt();
     IRQ_manager::get().process_interrupts();
   }
@@ -54,7 +56,7 @@ void blocking_close(Connection_ptr socket)
 extern "C" void* get_cpu_esp();
 void recursive_connect(net::Inet4& inet, uint16_t port)
 {
-  printf("[%p] connecting on port %u...\n", get_cpu_esp(), port);
+  printf("[%p] connecting to 10.0.0.1:%u...\n", get_cpu_esp(), port);
 
   auto socket = blocking_connect(inet, {10,0,0,1}, port);
   if (socket) {
