@@ -1,0 +1,4 @@
+*.o
+*.d
+*.img
+posix_test
