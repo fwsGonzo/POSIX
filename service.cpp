@@ -40,6 +40,17 @@ Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t 
       return nullptr;
 }
 
+void blocking_close(Connection_ptr socket)
+{
+  // close connection
+  socket->close();
+  // wait for connection to close
+  while (socket->is_closing()) {
+    OS::halt();
+    IRQ_manager::get().process_interrupts();
+  }
+}
+
 extern "C" void* get_cpu_esp();
 void recursive_connect(net::Inet4& inet, uint16_t port)
 {
@@ -50,18 +61,9 @@ void recursive_connect(net::Inet4& inet, uint16_t port)
       printf("connected\n");
       assert(socket);
       socket->write("test\n");
-      bool not_yet_closed = true;
-      // close connection
-      socket->close();
-      socket->on_disconnect(
-      [&not_yet_closed] (auto, auto) {
-        not_yet_closed = false;
-      });
-      // wait for connection to close
-      while (not_yet_closed) {
-        OS::halt();
-        IRQ_manager::get().process_interrupts();
-      }
+
+      blocking_close(socket);
+
       // connect again
       recursive_connect(inet, port+1);
   }
@@ -90,6 +92,9 @@ void Service::start(const std::string&)
 
   recursive_connect(inet, 1234);
 }
+
+#include <atomic>
+
 
 void print_heap_info()
 {
