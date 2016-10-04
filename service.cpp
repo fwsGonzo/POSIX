@@ -95,9 +95,6 @@ void Service::start(const std::string&)
   recursive_connect(inet, 1234);
 }
 
-#include <atomic>
-
-
 void print_heap_info()
 {
   static intptr_t last = 0;
