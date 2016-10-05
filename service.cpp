@@ -84,13 +84,25 @@ void recursive_connect(net::Inet4& inet, uint16_t port)
   OS::shutdown();
 }
 
+void recursive_context(int n = 1)
+{
+  Context::create(CONTEXT_STACK_SIZE,
+  [&n] {
+    printf("[%p] In context %d...\n", get_cpu_esp(), n);
+    if (n < 10)
+    recursive_context(n + 1);
+    printf("[%p] Leaving context %d\n", get_cpu_esp(), n);
+  });
+}
+
 void Service::start(const std::string&)
 {
   // add own serial out after service start
   auto& com1 = hw::Serial::port<1>();
   OS::add_stdout(com1.get_print_handler());
   // show that we are starting :)
-  printf("*** IRC Service starting up...\n");
+  printf("*** POSIX Service starting up...\n");
+  recursive_context(1);
 
   // default configuration (with DHCP)
   auto& inet = net::Inet4::ifconfig<>(10);
