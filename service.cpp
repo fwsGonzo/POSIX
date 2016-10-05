@@ -25,16 +25,23 @@ void default_stdout_handlers() {}
 
 using Connection_ptr = net::tcp::Connection_ptr;
 #include <kernel/irq_manager.hpp>
+#include <kernel/context.hpp>
+extern "C" void* get_cpu_esp();
+#define CONTEXT_STACK_SIZE   32768
+
 Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t port)
 {
   auto outgoing = inet.tcp().connect({addr, port});
-  assert(!outgoing->is_closed());
-
-  // wait for connection state to change
-  while (not (outgoing->is_connected() || outgoing->is_closing() || outgoing->is_closed())) {
-    OS::halt();
-    IRQ_manager::get().process_interrupts();
-  }
+  // do the blocking wait in another context
+  Context::create(CONTEXT_STACK_SIZE,
+  [outgoing, port] {
+    printf("[%p] connecting to 10.0.0.1:%u...\n", get_cpu_esp(), port);
+    // wait for connection state to change
+    while (not (outgoing->is_connected() || outgoing->is_closing() || outgoing->is_closed())) {
+      OS::halt();
+      IRQ_manager::get().process_interrupts();
+    }
+  });
   // return connection whether good or bad
   if (outgoing->is_connected())
       return outgoing;
@@ -46,18 +53,19 @@ void blocking_close(Connection_ptr socket)
 {
   // close connection
   socket->close();
-  // wait for connection to close
-  while (!socket->is_closed()) {
-    OS::halt();
-    IRQ_manager::get().process_interrupts();
-  }
+  // do the blocking wait in another context
+  Context::create(CONTEXT_STACK_SIZE,
+  [socket] {
+    // wait for connection to close
+    while (!socket->is_closed()) {
+      OS::halt();
+      IRQ_manager::get().process_interrupts();
+    }
+  });
 }
 
-extern "C" void* get_cpu_esp();
 void recursive_connect(net::Inet4& inet, uint16_t port)
 {
-  printf("[%p] connecting to 10.0.0.1:%u...\n", get_cpu_esp(), port);
-
   auto socket = blocking_connect(inet, {10,0,0,1}, port);
   if (socket) {
       printf("connected\n");
