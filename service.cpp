@@ -27,13 +27,18 @@ using Connection_ptr = net::tcp::Connection_ptr;
 #include <kernel/irq_manager.hpp>
 #include <kernel/context.hpp>
 extern "C" void* get_cpu_esp();
+
+// a pre-allocated pool of stacks we can use for blocking calls
 #define CONTEXT_STACK_SIZE   32768
+#include "context_pool.hpp"
+ContextPool<CONTEXT_STACK_SIZE> pool(10);
 
 Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t port)
 {
   auto outgoing = inet.tcp().connect({addr, port});
   // do the blocking wait in another context
-  Context::create(CONTEXT_STACK_SIZE,
+  auto cpv = pool.get();
+  Context::jump(cpv.start_address(),
   [outgoing, port] {
     printf("[%p] connecting to 10.0.0.1:%u...\n", get_cpu_esp(), port);
     // wait for connection state to change
@@ -54,7 +59,8 @@ void blocking_close(Connection_ptr socket)
   // close connection
   socket->close();
   // do the blocking wait in another context
-  Context::create(CONTEXT_STACK_SIZE,
+  auto cpv = pool.get();
+  Context::jump(cpv.start_address(),
   [socket] {
     // wait for connection to close
     while (!socket->is_closed()) {
@@ -84,14 +90,21 @@ void recursive_connect(net::Inet4& inet, uint16_t port)
   OS::shutdown();
 }
 
-void recursive_context(int n = 1)
+void recursive_context(int n)
 {
-  Context::create(CONTEXT_STACK_SIZE,
-  [&n] {
-    printf("[%p] In context %d...\n", get_cpu_esp(), n);
-    if (n < 10)
-    recursive_context(n + 1);
-    printf("[%p] Leaving context %d\n", get_cpu_esp(), n);
+  auto cpv = pool.get();
+  Context::jump(cpv.start_address(),
+  [&n, &cpv] {
+    // make sure we good
+    assert(cpv.valid_stack());
+    //printf("[%p] In context %d...\n", get_cpu_esp(), n);
+    //printf("[%d] Pool size: %u  capacity: %u\n", n, pool.size(), pool.capacity());
+    if (n < 1000)
+      recursive_context(n + 1);
+    // make sure we still good
+    assert(cpv.valid_stack());
+    //printf("[%d] Pool size: %u  capacity: %u\n", n, pool.size(), pool.capacity());
+    //printf("[%p] Leaving context %d\n", get_cpu_esp(), n);
   });
 }
 
@@ -103,6 +116,7 @@ void Service::start(const std::string&)
   // show that we are starting :)
   printf("*** POSIX Service starting up...\n");
   recursive_context(1);
+  printf("Pool size: %u  capacity: %u\n", pool.size(), pool.capacity());
 
   // default configuration (with DHCP)
   auto& inet = net::Inet4::ifconfig<>(10);
