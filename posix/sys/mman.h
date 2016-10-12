@@ -16,48 +16,21 @@
 // limitations under the License.
 
 #pragma once
-#ifndef POSIX_SYS_TYPES_H
-#define POSIX_SYS_TYPES_H
+#ifndef POSIX_SYS_MMAN_H
+#define POSIX_SYS_MMAN_H
 
 #include "common.h"
-#include <stdint.h>
+#include <sys/types.h>
 
-POSIX_BEGIN_DECLS
-
-typedef int blkcnt_t;
-typedef int blksize_t;
-
-typedef int64_t clock_t;
-typedef uint8_t clockid_t;
-
-typedef uint32_t dev_t;
-
-typedef int fsblkcnt_t;
-typedef int fsfilcnt_t;
-
-typedef uint32_t gid_t;
-
-typedef uint32_t id_t;
-
-typedef uint64_t ino_t;
-
-typedef int mode_t;
-
-typedef int nlink_t;
-
-typedef int off_t;
-
-typedef uint32_t pid_t;
-
-typedef int   size_t;
-typedef short ssize_t;
-
-typedef int64_t suseconds_t;
-
-typedef int64_t  time_t;
-typedef uint32_t timer_t;
-
-typedef uint32_t uid_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-POSIX_END_DECLS
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

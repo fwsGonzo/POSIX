@@ -63,6 +63,10 @@ struct CPV
     pool.free(value);
   }
 
+  intptr_t size() const noexcept {
+    return (intptr_t) start_address() - (intptr_t) value;
+  }
+
   void* start_address() const noexcept {
     // return end-aligned to 16 bytes
     return (void*) (((uintptr_t)value + StackSize) & ~0xF);
@@ -74,6 +78,15 @@ struct CPV
     auto start = (uintptr_t) start_address();
     auto end   = (uintptr_t) value;
     return esp < start && esp > end;
+  }
+
+  inline int32_t
+  estimate_used() const noexcept {
+    intptr_t len   = size();
+    auto*    stack = (char*) value;
+    for (intptr_t i = 0; i < len; i++)
+        if (stack[i]) return len - i;
+    return 0;
   }
 
 private:

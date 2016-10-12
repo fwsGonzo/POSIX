@@ -7,7 +7,7 @@ SERVICE = posix_test
 SERVICE_NAME = POSIX Testing Service
 
 # Your service parts
-FILES = service.cpp
+FILES = service.o socket_test.o src/sys/socket.o #sqlite/sqlite3.o
 
 # Your disk image
 DISK=
@@ -15,8 +15,8 @@ DISK=
 # Drivers to be used with service
 DRIVERS=virtionet
 
-# Your own include-path
-LOCAL_INCLUDES=
+LOCAL_DEFS=-D_HAVE_SQLITE_CONFIG_H
+LOCAL_INCLUDES=-Iposix
 
 # IncludeOS location
 ifndef INCLUDEOS_INSTALL

@@ -29,9 +29,27 @@ using Connection_ptr = net::tcp::Connection_ptr;
 extern "C" void* get_cpu_esp();
 
 // a pre-allocated pool of stacks we can use for blocking calls
-#define CONTEXT_STACK_SIZE   32768
+#define CONTEXT_STACK_SIZE   8192
 #include "context_pool.hpp"
 ContextPool<CONTEXT_STACK_SIZE> pool(10);
+
+void blocking_write(Connection_ptr conn, const char* data, size_t len)
+{
+  bool written = false;
+  conn->write(data, len,
+  [&written] (bool) { written = true; });
+  // sometimes we can just write and forget
+  if (written) return;
+  // do the blocking wait in another context
+  auto cpv = pool.get();
+  Context::jump(cpv.start_address(),
+  [conn, &written] {
+    while (!written) {
+      OS::halt();
+      IRQ_manager::get().process_interrupts();
+    }
+  });
+}
 
 Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t port)
 {
@@ -47,6 +65,7 @@ Connection_ptr blocking_connect(net::Inet4& inet, net::IP4::addr addr, uint16_t 
       IRQ_manager::get().process_interrupts();
     }
   });
+  printf("Stack estimated used %d bytes\n", cpv.estimate_used());
   // return connection whether good or bad
   if (outgoing->is_connected())
       return outgoing;
@@ -72,22 +91,21 @@ void blocking_close(Connection_ptr socket)
 
 void recursive_connect(net::Inet4& inet, uint16_t port)
 {
-  auto socket = blocking_connect(inet, {10,0,0,1}, port);
-  if (socket) {
-      printf("connected\n");
-      assert(socket);
-      socket->write("test\n");
+  int retries = 3;
+  while (retries--)
+  {
+    auto socket = blocking_connect(inet, {10,0,0,1}, port);
+    if (socket) {
+        const std::string Long(200, '+');
+        blocking_write(socket, Long.data(), Long.size());
+        blocking_close(socket);
 
-      blocking_close(socket);
-
-      // connect again
-      recursive_connect(inet, port+1);
+        // connect to next port
+        recursive_connect(inet, port+1);
+        break;
+    }
   }
-  else {
-      printf("we are closed and socket is null\n");
-      assert(!socket);
-  }
-  OS::shutdown();
+  printf("Too many retries\n");
 }
 
 void recursive_context(int n)
@@ -108,6 +126,8 @@ void recursive_context(int n)
   });
 }
 
+#include <sys/mman.h>
+
 void Service::start(const std::string&)
 {
   // add own serial out after service start
@@ -115,6 +135,9 @@ void Service::start(const std::string&)
   OS::add_stdout(com1.get_print_handler());
   // show that we are starting :)
   printf("*** POSIX Service starting up...\n");
+
+  printf("bool: %u\n", sizeof(bool));
+
   recursive_context(1);
   printf("Pool size: %u  capacity: %u\n", pool.size(), pool.capacity());
 
@@ -127,6 +150,16 @@ void Service::start(const std::string&)
       {  10, 0,  0,  1 }); // DNS
 
   recursive_connect(inet, 1234);
+
+  // create our own working memory ...
+  Context::create(4096,
+  [] {
+    // and run same event loop as OS
+    while (OS::is_running()) {
+      OS::halt();
+      IRQ_manager::get().process_interrupts();
+    }
+  });
 }
 
 void print_heap_info()

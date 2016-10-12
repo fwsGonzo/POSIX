@@ -19,9 +19,12 @@
 #ifndef POSIX_SYS_SOCKET_H
 #define POSIX_SYS_SOCKET_H
 
-#include "common.h"
+#include <sys/types.h>
+#include <cstdint>
 
-POSIX_BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef int32_t socklen_t;
 typedef uint8_t sa_family_t;
@@ -62,10 +65,10 @@ struct linger
   int  l_linger;  // Linger time, in seconds.
 };
 
+#define SOCK_STREAM     0
 #define SOCK_DGRAM      1
 #define SOCK_RAW        2
 #define SOCK_SEQPACKET  3
-#define SOCK_STREAM     4
 
 #define SOL_SOCKET    322
 
@@ -87,5 +90,41 @@ struct linger
 
 #define SOMAXCONN      64
 
-POSIX_END_DECLS
+#define AF_UNIX         0
+#define AF_LOCAL  AF_UNIX
+#define AF_INET         1
+#define AF_INET6        2
+
+
+int     accept(int socket, struct sockaddr *address,
+               socklen_t *address_len);
+int     bind(int socket, const struct sockaddr *address,
+             socklen_t address_len);
+int     connect(int socket, const struct sockaddr *address,
+                socklen_t address_len);
+int     getpeername(int socket, struct sockaddr *address,
+                    socklen_t *address_len);
+int     getsockname(int socket, struct sockaddr *address,
+                    socklen_t *address_len);
+int     getsockopt(int socket, int level, int option_name,
+                   void *option_value, socklen_t *option_len);
+int     listen(int socket, int backlog);
+ssize_t recv(int socket, void *buffer, size_t length, int flags);
+ssize_t recvfrom(int socket, void *buffer, size_t length,
+                 int flags, struct sockaddr *address, socklen_t *address_len);
+ssize_t recvmsg(int socket, struct msghdr *message, int flags);
+ssize_t send(int socket, const void *message, size_t length, int flags);
+ssize_t sendmsg(int socket, const struct msghdr *message, int flags);
+ssize_t sendto(int socket, const void *message, size_t length, int flags,
+               const struct sockaddr *dest_addr, socklen_t dest_len);
+int     setsockopt(int socket, int level, int option_name,
+                   const void *option_value, socklen_t option_len);
+int     shutdown(int socket, int how);
+int     socket(int domain, int type, int protocol);
+int     socketpair(int domain, int type, int protocol,
+                   int socket_vector[2]);
+
+#ifdef __cplusplus
+}
+#endif
 #endif

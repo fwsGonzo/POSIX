@@ -16,13 +16,3 @@
 // limitations under the License.
 
 #pragma once
-
-#define POSIX_BEGIN_DECLS  \
-    #ifdef _CPLUSPLUS \
-    extern "C" {      \
-    #endif
-
-#define POSIX_END_DECLS \
-    #ifdef _CPLUSPLUS \
-    }                 \
-    #endif
