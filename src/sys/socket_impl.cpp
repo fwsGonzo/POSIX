@@ -41,6 +41,15 @@ void __blocking_write(Connection_ptr conn, const char* data, size_t len)
   }
 }
 
+struct TCP_FD;
+void __blocking_read(TCP_FD&, char* data, size_t len)
+{
+  /// retrieve X bytes from existing TCP_FD
+  /// return how many bytes we read
+  /// if we didnt read len bytes, then block until we can
+  /// if the connection is closing or closed, return 0
+}
+
 Connection_ptr __blocking_connect(net::IP4::addr addr, uint16_t port)
 {
   auto outgoing = net_stack().tcp().connect({addr, port});
