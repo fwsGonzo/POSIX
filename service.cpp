@@ -49,6 +49,55 @@ void recursive_context(int n)
 
 extern "C" void socket_test();
 
+extern "C"
+int dlopen(...) {
+  return -1;
+}
+extern "C"
+int dlerror(...) {
+  return -1;
+}
+extern "C"
+int dlsym(...) {
+  return -1;
+}
+extern "C"
+int dlclose(...) {
+  return -1;
+}
+extern "C"
+long sysconf(int) {
+  return -1;
+}
+extern "C"
+uid_t geteuid() {
+  return 0;
+}
+extern "C"
+ssize_t readlink(const char *path, char *buf, size_t bufsiz)
+{
+  printf("readlink %s (buf=%u)\n", bufsiz);
+  return 0;
+}
+int utime(const char *filename, const struct utimbuf *times)
+{
+  return -1;
+}
+int utimes(const char *filename, const struct timeval times[2])
+{
+  return -1;
+}
+
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+   int i;
+   for(i=0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   }
+   printf("\n");
+   return 0;
+}
+
+#include "sqlite/sqlite3.h"
 void Service::start(const std::string&)
 {
   // add own serial out after service start
@@ -56,6 +105,34 @@ void Service::start(const std::string&)
   OS::add_stdout(com1.get_print_handler());
   // show that we are starting :)
   printf("*** POSIX Service starting up...\n");
+
+  //
+  sqlite3* db;
+  int rc = sqlite3_open(":memory:", &db);
+  printf("sqlite opened: %d\n", rc);
+  assert(rc == 0);
+
+  /* Create SQL statement */
+  const char*
+  sql = "CREATE TABLE COMPANY("  \
+        "ID INT PRIMARY KEY     NOT NULL," \
+        "NAME           TEXT    NOT NULL," \
+        "AGE            INT     NOT NULL," \
+        "ADDRESS        CHAR(50)," \
+        "SALARY         REAL );";
+
+  /* Execute SQL statement */
+  char* zErrMsg = 0;
+  rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+  if (rc) {
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(zErrMsg);
+  } else {
+    fprintf(stdout, "Table created successfully\n");
+  }
+  rc = sqlite3_close(db);
+  printf("sqlite closed: %d\n", rc);
+  return;
 
   // default configuration (with DHCP)
   auto& inet = net::Inet4::ifconfig<>(10);
