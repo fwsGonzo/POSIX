@@ -8,7 +8,7 @@ SERVICE_NAME = POSIX Testing Service
 
 # Your service parts
 FILES = service.o socket_test.o \
-				#sqlite/sqlite3.o
+				sqlite/sqlite3.o
 
 # Your disk image
 DISK=
