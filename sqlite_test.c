@@ -42,11 +42,6 @@ long sysconf(int d) {
 uid_t geteuid() {
   return 0;
 }
-ssize_t readlink(const char *path, char *buf, size_t bufsiz)
-{
-  printf("readlink %s (buf=%u)\n", bufsiz);
-  return 0;
-}
 int utime(const char *filename, const struct utimbuf *times)
 {
   return -1;
