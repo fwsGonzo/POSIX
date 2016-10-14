@@ -8,7 +8,7 @@
 void socket_test()
 {
   /// do POSIX things
-  auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   printf("socket() returned %d\n", sockfd);
 
   //in_addr shit_addr;

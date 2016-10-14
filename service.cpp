@@ -47,8 +47,7 @@ void recursive_context(int n)
   });
 }
 
-#include <sys/mman.h>
-#include <sys/socket.h>
+extern "C" void socket_test();
 
 void Service::start(const std::string&)
 {
@@ -66,7 +65,6 @@ void Service::start(const std::string&)
       {  10, 0,  0,  1 },  // Gateway
       {  10, 0,  0,  1 }); // DNS
 
-  extern void socket_test();
   socket_test();
 }
 
