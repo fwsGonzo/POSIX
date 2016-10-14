@@ -8,7 +8,6 @@ SERVICE_NAME = POSIX Testing Service
 
 # Your service parts
 FILES = service.o socket_test.o \
-				src/sys/socket.o src/sys/socket_impl.o
 				#sqlite/sqlite3.o
 
 # Your disk image
@@ -18,7 +17,7 @@ DISK=
 DRIVERS=virtionet
 
 LOCAL_DEFS=-D_HAVE_SQLITE_CONFIG_H
-LOCAL_INCLUDES=-Iposix
+LOCAL_INCLUDES=
 
 # IncludeOS location
 ifndef INCLUDEOS_INSTALL

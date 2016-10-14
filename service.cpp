@@ -66,24 +66,8 @@ void Service::start(const std::string&)
       {  10, 0,  0,  1 },  // Gateway
       {  10, 0,  0,  1 }); // DNS
 
-  /// do POSIX things
-  auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-  struct sockaddr_in serv_addr;
-  memset(&serv_addr, 0, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = net::htons(6667);
-
-  if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-      assert(0 && "ERROR connecting");
-
-  const char buffer[] = "KKona Amerifats KKona";
-
-  int len = send(sockfd, buffer, strlen(buffer), 0);
-  if (len < 0) assert(0 && "ERROR writing to socket");
-
-  if (close(sockfd) < 0)
-      assert(0 && "Failed to close socket");
+  extern void socket_test();
+  socket_test();
 }
 
 void print_heap_info()
