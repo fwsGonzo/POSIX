@@ -58,9 +58,6 @@ void Service::start(const std::string&)
   // show that we are starting :)
   printf("*** POSIX Service starting up...\n");
 
-  sqlite_test();
-  return;
-
   // default configuration (with DHCP)
   auto& inet = net::Inet4::ifconfig<>(10);
   inet.network_config(
