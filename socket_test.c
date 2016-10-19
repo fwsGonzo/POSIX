@@ -36,7 +36,7 @@ void socket_test()
 
   int len = send(sockfd, buffer, strlen(buffer), 0);
   if (len < 0) fail("send() failed");
-  assert(len == strlen(buffer));
+  assert(len == (int) strlen(buffer));
   printf("send() success\n");
 
   char readbuf[1024];
@@ -46,4 +46,5 @@ void socket_test()
 
   ret = close(sockfd);
   if (ret < 0) fail("close() failed");
+  printf("close() success\n");
 }
