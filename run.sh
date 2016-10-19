@@ -1,7 +1,6 @@
 #! /bin/bash
 set -e
+sudo ${INCLUDEOS_HOME-$HOME/IncludeOS_install}/etc/create_bridge.sh
 
-sudo ../IncludeOS/etc/create_bridge.sh
-
-make -j $1
-source ${INCLUDEOS_HOME-$HOME/IncludeOS_install}/etc/run.sh `make servicefile`
+make -j
+source ${INCLUDEOS_HOME-$HOME/IncludeOS_install}/etc/run.sh `make kernelfile`
