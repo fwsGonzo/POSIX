@@ -16,38 +16,29 @@
 // limitations under the License.
 
 #include "sqlite/sqlite3.h"
-#include <stdio.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 
-int dlopen(const char* name, ...) {
-  (void) name;
-  return -1;
-}
-int dlerror(int d) {
-  (void) d;
-  return -1;
-}
-int dlsym(int d) {
-  (void) d;
-  return -1;
-}
-int dlclose(int d) {
-  (void) d;
-  return -1;
-}
-long sysconf(int d) {
-  (void) d;
+long sysconf(int name) {
+  printf("sysconf(%d) called, not supported\n", name);
+  errno = ENOTSUP;
   return -1;
 }
 uid_t geteuid() {
+  printf("geteuid() called, not supported\n");
   return 0;
 }
 int utime(const char *filename, const struct utimbuf *times)
 {
+  printf("utime(%s, %p) called, not supported\n", filename, times);
+  errno = ENOTSUP;
   return -1;
 }
 int utimes(const char *filename, const struct timeval times[2])
 {
+  printf("utimes(%s, %p) called, not supported\n", filename, times);
+  errno = ENOTSUP;
   return -1;
 }
 
@@ -59,6 +50,18 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
    printf("\n");
    return 0;
 }
+static int sqlite_exec(sqlite3* db, const char* message)
+{
+  char* error_message = NULL;
+  int rc = sqlite3_exec(db, message, callback, 0, &error_message);
+  if (rc) {
+    assert(error_message);
+    fprintf(stderr, "SQL error: %s\n", error_message);
+    sqlite3_free(error_message);
+    return -1;
+  }
+  return 0;
+}
 
 void sqlite_test()
 {
@@ -69,23 +72,35 @@ void sqlite_test()
   assert(rc == 0);
 
   /* Create SQL statement */
-  const char*
-  sql = "CREATE TABLE COMPANY("
-        "ID INT PRIMARY KEY     NOT NULL,"
-        "NAME           TEXT    NOT NULL,"
-        "AGE            INT     NOT NULL,"
-        "ADDRESS        CHAR(50),"
-        "SALARY         REAL );";
-
-  /* Execute SQL statement */
-  char* zErrMsg = 0;
-  rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
-  if (rc) {
-    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    sqlite3_free(zErrMsg);
-  } else {
-    fprintf(stdout, "Table created successfully\n");
+  rc = sqlite_exec(db,
+      "CREATE TABLE company("
+      "id INT PRIMARY KEY     NOT NULL,"
+      "name           TEXT    NOT NULL,"
+      "age            INT     NOT NULL,"
+      "address        CHAR(50),"
+      "salary         REAL );");
+  
+  if (rc == 0)
+  {
+    for (int i = 0; i < 10000; i++)
+    {
+      static int next_id = 0;
+      next_id++;
+      char buffer[1024];
+      snprintf(buffer, sizeof(buffer),
+          "INSERT INTO company("
+          "id, name, age, address, salary)"
+          " VALUES ("
+          "%d, 'Fjell Kåre', 12, 'Fjellveien 12', 100.0 );",
+          next_id);
+      rc = sqlite_exec(db, buffer);
+      assert(rc == 0);
+    }
+    
+    //rc = sqlite_exec(db,
+    //    "SELECT id, name, age FROM company");
   }
+
   rc = sqlite3_close(db);
   printf("sqlite closed: %d\n", rc);
 }
