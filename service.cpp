@@ -67,4 +67,5 @@ void Service::start(const std::string&)
       {  10, 0,  0,  1 }); // DNS
 
   sqlite_test();
+  OS::shutdown();
 }
